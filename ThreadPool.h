@@ -12,6 +12,7 @@ class ThreadPool {
  public:
   ThreadPool() : isWork(true) {
     const size_t numThreads = std::thread::hardware_concurrency();
+    // const size_t numThreads = 1;
     threads.reserve(numThreads);
 
     for (size_t i = 0; i < numThreads; ++i) {
@@ -27,7 +28,9 @@ class ThreadPool {
       std::unique_lock<std::mutex> lock(mutex);
       isWork = false;
     }
-    cv.notify_all();
+    for (size_t i = 0; i < threads.size(); ++i) {
+      cv.notify_one();
+    }
 
     for (auto& thread : threads) {
       if (thread.joinable()) {
@@ -38,7 +41,7 @@ class ThreadPool {
 
   template <typename ResultType, typename F, typename... Args>
   void addTask(size_t priority, F&& func, Args&&... args) {
-    auto task = TypeSafeTask<ResultType, Args...>(
+    auto task = TypeSafeTask<ResultType>(
         [f = std::forward<F>(func),
          ... args = std::forward<Args>(args)]() mutable { return f(args...); });
 
@@ -60,9 +63,9 @@ class ThreadPool {
 
  private:
   void workerThread() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     while (true) {
       std::function<void()> task;
-
       {
         std::unique_lock<std::mutex> lock(mutex);
         cv.wait(lock, [this]() { return !taskQueue.empty() || !isWork; });
