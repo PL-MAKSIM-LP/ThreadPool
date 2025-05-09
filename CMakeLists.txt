@@ -56,3 +56,17 @@ add_custom_target(run_tests
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     VERBATIM
 )
+
+# === Tests Memory Arena ===
+add_executable(MemoryArenaTest
+    MemoryArenaTest.cpp
+    MemoryArena.h
+)
+
+target_link_libraries(MemoryArenaTest PRIVATE
+    GTest::GTest
+    GTest::Main
+    Threads::Threads
+)
+
+target_link_libraries(MemoryArenaTest PRIVATE Threads::Threads)
