@@ -3,6 +3,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <iostream>
+#include <map>
 #include <thread>
 #include <vector>
 
@@ -17,8 +18,12 @@ class ThreadPool {
 
     for (size_t i = 0; i < numThreads; ++i) {
       threads.emplace_back([this]() { workerThread(); });
+      threadsLogs.insert({threads.back().get_id(), ""});
     }
 
+    for (auto& th : threads) {
+      std::cout << th.get_id() << std::endl;
+    }
     std::cout << "ThreadPool started with " << numThreads << " threads."
               << std::endl;
   }
@@ -36,6 +41,13 @@ class ThreadPool {
       if (thread.joinable()) {
         thread.join();
       }
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+
+    for (auto& th : threadsLogs) {
+      std::cout << th.second << std::endl;
+      std::cout << "-------------------------------" << std::endl;
     }
   }
 
@@ -61,11 +73,14 @@ class ThreadPool {
     return taskQueue.empty();
   }
 
+  std::atomic<int> counter = 0;
+
  private:
   void workerThread() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(50));
     while (true) {
       std::function<void()> task;
+      std::string taskinfo;
       {
         std::unique_lock<std::mutex> lock(mutex);
         cv.wait(lock, [this]() { return !taskQueue.empty() || !isWork; });
@@ -74,13 +89,19 @@ class ThreadPool {
           return;
         }
 
-        if (!taskQueue.getTask(task)) {
+        if (!taskQueue.getTask(task, taskinfo)) {
           continue;
         }
       }
 
       try {
         if (task) {
+          counter.fetch_add(1);
+          {
+            std::lock_guard<std::mutex> lock(writeMutex);
+            threadsLogs.find(std::this_thread::get_id())->second +=
+                taskinfo + "\n";
+          }
           task();
         }
       } catch (const std::exception& e) {
@@ -92,5 +113,7 @@ class ThreadPool {
   TypeSafeTaskQueue taskQueue;
   std::vector<std::thread> threads;
   mutable std::mutex mutex;
+  std::mutex writeMutex;
   std::condition_variable cv;
+  std::map<std::thread::id, std::string> threadsLogs;
 };

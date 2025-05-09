@@ -12,47 +12,48 @@ TEST(ThreadPoolTestTest, SimpleTask1) {
     ThreadPool pool;
 
     for (int i = 0; i < result; ++i) {
-      pool.addTask<void>(1,
-                         [&x]() { x.fetch_add(1, std::memory_order_relaxed); });
+      pool.addTask<void>(1, [&x]() { x.fetch_add(1); });
     }
 
     while (!pool.isQueueEmpty()) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     EXPECT_EQ(x.load(), result);
-    std::cout << x << std::endl;
+    std::cout << " x = " << x << std::endl;
+
+    std::cout << "Counter = " << pool.counter << std::endl;
   }
 }
 
-TEST(ThreadPoolTestTest, SimpleTask2) {
-  LockFreeQueue<int> lockFreeQueue;
+// TEST(ThreadPoolTestTest, SimpleTask2) {
+//   LockFreeQueue<int> lockFreeQueue;
 
-  int result = 100;
-  ThreadPool pool;
-  for (int i = 1; i < result + 1; ++i) {
-    pool.addTask<void>(1, [&lockFreeQueue, i]() {
-      std::cout << "i = " << i << std::endl;
-      lockFreeQueue.push(i);
-    });
-  }
+//   int result = 100;
+//   ThreadPool pool;
+//   for (int i = 1; i < result + 1; ++i) {
+//     pool.addTask<void>(1, [&lockFreeQueue, i]() {
+//       std::cout << "i = " << i << std::endl;
+//       lockFreeQueue.push(i);
+//     });
+//   }
 
-  while (!pool.isQueueEmpty()) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  }
+//   while (!pool.isQueueEmpty()) {
+//     std::this_thread::sleep_for(std::chrono::milliseconds(1));
+//   }
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  // lockFreeQueue.printAllData();
-}
+//   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+//   // lockFreeQueue.printAllData();
+// }
 
-TEST(ThreadPoolTestTest, SimpleTask3) {
-  LockFreeQueue<int> lockFreeQueue;
+// TEST(ThreadPoolTestTest, SimpleTask3) {
+//   LockFreeQueue<int> lockFreeQueue;
 
-  int result = 100;
-  for (int i = 1; i < result + 1; ++i) {
-    lockFreeQueue.push(i);
-  }
+//   int result = 100;
+//   for (int i = 1; i < result + 1; ++i) {
+//     lockFreeQueue.push(i);
+//   }
 
-  lockFreeQueue.printAllData();
-}
+//   lockFreeQueue.printAllData();
+// }

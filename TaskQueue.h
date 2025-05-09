@@ -5,7 +5,12 @@
 #include <mutex>
 #include <queue>
 
+#include <uuid/uuid.h>
+#include <string>
+
 #include "TypeSafeTask.h"
+
+static int _id = 0;
 
 class TypeSafeTaskQueue {
  private:
@@ -13,6 +18,7 @@ class TypeSafeTaskQueue {
     size_t priority;
     std::shared_ptr<void> task;
     std::function<void()> executor;
+    int id;
 
     template <typename ResultType, typename... Args>
     PriorityTask(size_t p, TypeSafeTask<ResultType>&& task)
@@ -20,6 +26,9 @@ class TypeSafeTaskQueue {
           task(std::make_shared<TypeSafeTask<ResultType>>(std::move(task))) {
       auto typed_task =
           static_cast<TypeSafeTask<ResultType>*>(this->task.get());
+
+      // id = generateUUID();
+      id = ++_id;
 
       executor = [typed_task]() {
         if constexpr (std::is_void_v<ResultType>) {
@@ -34,6 +43,14 @@ class TypeSafeTaskQueue {
     bool operator<(const PriorityTask& other) const {
       return priority > other.priority;
     }
+
+    std::string generateUUID() {
+      uuid_t uuid;
+      uuid_generate(uuid);
+      char str[37];
+      uuid_unparse(uuid, str);
+      return std::string(str);
+    }
   };
 
  public:
@@ -47,13 +64,16 @@ class TypeSafeTaskQueue {
     taskQueue.emplace(priority, std::move(task));
   }
 
-  bool getTask(std::function<void()>& task) {
+  bool getTask(std::function<void()>& task, std::string& str) {
     std::lock_guard<std::mutex> lock(mutex);
     if (taskQueue.empty()) {
       return false;
     }
 
     task = std::move(taskQueue.top().executor);
+
+    str = std::to_string(taskQueue.top().id);
+
     taskQueue.pop();
     return true;
   }
