@@ -12,6 +12,7 @@ endif()
 
 add_executable(FromJuniorToMiddle
     main.cpp
+    TypeErasure_1.h
 )
 
 find_package(Threads REQUIRED)
@@ -56,3 +57,43 @@ add_custom_target(run_tests
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     VERBATIM
 )
+
+# === Tests SharedPRT ===
+add_executable(SharedPtrTest
+    SharedPtr.h
+    SharedPtrTest.cpp
+)
+
+target_link_libraries(SharedPtrTest PRIVATE
+    GTest::GTest
+    GTest::Main
+    Threads::Threads
+)
+
+include(GoogleTest)
+gtest_discover_tests(SharedPtrTest
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+    PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+)
+
+add_custom_target(run_tests_sharedptr
+    COMMAND ${PROJECT_BINARY_DIR}/SharedPtrTest
+    DEPENDS SharedPtrTest
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+    VERBATIM
+)
+
+
+# # === Tests Memory Arena ===
+# add_executable(MemoryArenaTest
+#     MemoryArenaTest.cpp
+#     MemoryArena.h
+# )
+
+# target_link_libraries(MemoryArenaTest PRIVATE
+#     GTest::GTest
+#     GTest::Main
+#     Threads::Threads
+# )
+
+# target_link_libraries(MemoryArenaTest PRIVATE Threads::Threads)
